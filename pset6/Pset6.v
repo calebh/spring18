@@ -143,30 +143,217 @@ Fixpoint interp (e : arith) (v : valuation) : nat :=
      sanity check!
  *)
 
-Definition result : Type.
-Admitted.
+Inductive result : Type :=
+| NondetBranch : result -> result -> result
+| Aborted : result
+| NormalTerm : valuation -> result.
 
-Definition eval : valuation -> cmd -> result -> Prop.
-Admitted.
+Inductive eval_nondet : result -> cmd -> result -> Prop :=
+| EvalNondetBranch : forall ra ra' rb rb' c,
+      eval_nondet ra c ra' ->
+      eval_nondet rb c rb' ->
+      eval_nondet (NondetBranch ra rb) c (NondetBranch ra' rb')
+| EvalAbortedBranch : forall c,
+      eval_nondet Aborted c Aborted
+| EvalNormalTerm : forall v c r,
+      eval v c r ->
+      eval_nondet (NormalTerm v) c r
 
-Definition big_aborted : result -> Prop.
-Admitted.
+with eval : valuation -> cmd -> result -> Prop :=
+| EvalAssign : forall v x e, eval v (Assign x e) (NormalTerm (v $+ (x, interp e v)))
+| EvalSkip : forall v, eval v Skip (NormalTerm v)
+| EvalSeq : forall v c1 r1 c2 r2,
+      eval v c1 r1 ->
+      eval_nondet r1 c2 r2 ->
+      eval v (Seq c1 c2) r2
+| EvalChoose : forall v c1 r1 c2 r2,
+      eval v c1 r1 ->
+      eval v c2 r2 ->
+      eval v (Choose c1 c2) (NondetBranch r1 r2)
+| EvalIfTrue : forall v e t f r,
+      interp e v <> 0 ->
+      eval v t r ->
+      eval v (If e t f) r
+| EvalIfFalse : forall v e t f r,
+      interp e v = 0 ->
+      eval v f r ->
+      eval v (If e t f) r
+| EvalWhileTrue : forall v e body r r',
+      interp e v <> 0 ->
+      eval v body r ->
+      eval_nondet r (While e body) r' ->
+      eval v (While e body) r'
+| EvalWhileFalse : forall v e body,
+      interp e v = 0 ->
+      eval v (While e body) (NormalTerm v)
+| EvalAbort : forall v,
+      eval v Abort Aborted.
+  
+
+Fixpoint big_aborted (r : result) : Prop :=
+  match r with
+  | NondetBranch l r => big_aborted l \/ big_aborted r
+  | Aborted => True
+  | NormalTerm _ => False
+  end.
 
 (* As an optional sanity check, you may attempt to
  * prove that your big-step semantics behaves appropriately
- * for an example program:
+ * for an example program: *)
  
 Example test_prog1_reachable :
   exists res, eval $0 (test_prog1 5) res /\ big_aborted res.
 Proof.
-Admitted.
+  eexists.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  econstructor.
+  apply EvalIfFalse.
+  simplify.
+  equality.
+  econstructor.
+  econstructor.
+  apply EvalIfTrue.
+  simplify.
+  equality.
+  econstructor.
+  econstructor.
+  econstructor.
+  apply EvalIfFalse.
+  simplify.
+  equality.
+  econstructor.
+  econstructor.
+  apply EvalIfFalse.
+  simplify.
+  equality.
+  econstructor.
+  simplify.
+  propositional.
+Qed.
 
 Example test_prog1_unreachable :
   forall res, eval $0 (test_prog1 6) res -> big_aborted res -> False.
 Proof.
-Admitted.
-*)
-
+  induct res; simplify.
+  - propositional.
+    * unfold test_prog1 in H.
+      invert H.
+      invert H4.
+      invert H3.
+      invert H4.
+      invert H8.
+      invert H0.
+      invert H4.
+      invert H8.
+      invert H7.
+      invert H2.
+      invert H5.
+      invert H0.
+      invert H5.
+      invert H2.
+      invert H8.
+      invert H4.
+      invert H7.
+      invert H6.
+      invert H4.
+      invert H2.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H9.
+      invert H6.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H9.
+      propositional.
+    * unfold test_prog1 in H.
+      invert H.
+      invert H4.
+      invert H3.
+      invert H4.
+      invert H8.
+      invert H0.
+      invert H4.
+      invert H8.
+      invert H7.
+      invert H2.
+      invert H5.
+      invert H0.
+      invert H5.
+      invert H2.
+      invert H8.
+      invert H4.
+      invert H7.
+      invert H6.
+      invert H4.
+      invert H2.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H9.
+      invert H6.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H9.
+      invert H7.
+      invert H2.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H10.
+      invert H5.
+      invert H0.
+      simplify.
+      equality.
+      simplify.
+      invert H10.
+      propositional.
+  - invert H.
+    invert H4.
+    invert H3.
+    invert H4.
+    invert H8.
+    invert H1.
+    invert H4.
+    invert H8.
+    invert H7.
+    invert H2.
+    invert H5.
+    invert H1.
+    invert H5.
+    invert H8.
+    invert H2.
+    invert H4.
+    invert H7.
+    invert H6.
+  - assumption.
+Qed.
 
   (** ** Part 2: Small-step deterministic operational semantics *)
 
